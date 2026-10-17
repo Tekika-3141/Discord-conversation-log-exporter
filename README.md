@@ -1,6 +1,7 @@
 # Discord 会話ログ出力Bot
 
 Discordのチャンネルから会話履歴を取得し、テキストファイルとして出力するBotです。
+For the English version, please see the section below.
 
 ## 目次
 
