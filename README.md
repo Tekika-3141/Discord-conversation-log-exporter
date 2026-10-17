@@ -124,8 +124,8 @@ Botを停止するには、ターミナルで `Ctrl+C` を押します。
 | --- | --- | --- |
 | `limit` | 取得するメッセージ数 | `100` |
 | `use_sjis` | `True`でShift_JIS（CP932）、`False`でUTF-8（BOM付き） | `False` |
-| `include_user_id` | ログにユーザーIDを含めるか | `True` |
-| `user_name_type` | `username`、`both`、`display_name`から選択 | `username` |
+| `include_user_id` | ログにユーザーIDを含めるか | `False` |
+| `user_name_type` | `username`、`both`、`display_name`から選択 | `display_name` |
 
 ユーザー名タイプの意味:
 

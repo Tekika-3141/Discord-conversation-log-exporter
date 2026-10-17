@@ -60,8 +60,8 @@ async def export_logs(
     interaction: discord.Interaction,
     limit: int = 100,
     use_sjis: bool = False,
-    include_user_id: bool = True,
-    user_name_type: str = "username",
+    include_user_id: bool = False,
+    user_name_type: str = "display_name",
 ):
     await interaction.response.defer(ephemeral=False)
 
