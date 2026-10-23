@@ -16,13 +16,31 @@ intents.message_content = True
 class MyBot(commands.Bot):
 
     def __init__(self):
-        super().__init__(command_prefix="!", intents=intents)
+        super().__init__(
+            command_prefix="!",
+            intents=intents
+        )
 
     async def setup_hook(self):
         await self.tree.sync()
 
 
 bot = MyBot()
+
+
+# ファイルサイズを読みやすい形式に変換
+def format_file_size(size: int) -> str:
+    if size < 1024:
+        return f"{size} B"
+
+    elif size < 1024 ** 2:
+        return f"{size / 1024:.2f} KB"
+
+    elif size < 1024 ** 3:
+        return f"{size / (1024 ** 2):.2f} MB"
+
+    else:
+        return f"{size / (1024 ** 3):.2f} GB"
 
 
 @bot.event
@@ -68,7 +86,9 @@ async def export_logs(
     messages = []
 
     try:
-        async for message in interaction.channel.history(limit=limit):
+        async for message in interaction.channel.history(
+            limit=limit
+        ):
             time_str = message.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
@@ -96,10 +116,37 @@ async def export_logs(
             else:
                 author_info = author_name
 
+            # メッセージ本文を取得
+            message_content = message.content
+
+            # 添付ファイルの情報を取得
+            attachment_lines = []
+
+            for attachment in message.attachments:
+
+                # ファイル名とサイズを取得
+                file_name = attachment.filename
+                file_size = format_file_size(attachment.size)
+
+                attachment_lines.append(
+                    f"添付ファイル: {file_name} ({file_size})"
+                )
+
+            # 添付ファイルがある場合はログに追加
+            if attachment_lines:
+                attachment_text = "\n".join(attachment_lines)
+
+                if message_content:
+                    message_content += "\n" + attachment_text
+                else:
+                    message_content = attachment_text
+
+            # ログに追加
             messages.append(
                 f"[{time_str}] {author_info}: "
-                f"{message.content}\n"
+                f"{message_content}\n"
             )
+
     except discord.Forbidden:
         embed = discord.Embed(
             title="ログを出力できませんでした",
@@ -110,31 +157,58 @@ async def export_logs(
             ),
             color=discord.Color.red(),
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+
+        await interaction.followup.send(
+            embed=embed,
+            ephemeral=True
+        )
         return
 
+    # 古いメッセージから順番に並べる
     messages.reverse()
+
     log_text = "".join(messages)
 
+    # 文字コードを選択
     if use_sjis:
         encoding_name = "cp932(Shift_JIS)"
+
         file_bytes = io.BytesIO(
-            log_text.encode("cp932", errors="replace")
+            log_text.encode(
+                "cp932",
+                errors="replace"
+            )
         )
+
     else:
         # UTF-8(BOM付き)で保存
         encoding_name = "utf-8-sig"
+
         file_bytes = io.BytesIO(
             log_text.encode(encoding_name)
         )
 
-    server_name = interaction.guild.name if interaction.guild else "DM"
-
-    file = discord.File(
-        file_bytes,
-        filename=f"log_{interaction.channel.name} in {server_name}.txt"
+    # サーバー名を取得
+    server_name = (
+        interaction.guild.name
+        if interaction.guild
+        else "DM"
     )
 
+    # チャンネル名を取得
+    channel_name = getattr(
+        interaction.channel,
+        "name",
+        "unknown"
+    )
+
+    # ファイル名を設定
+    file = discord.File(
+        file_bytes,
+        filename=f"log_{channel_name} in {server_name}.txt"
+    )
+
+    # 出力完了Embed
     embed = discord.Embed(
         title="会話ログを出力しました",
         description=(
