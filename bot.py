@@ -54,6 +54,7 @@ async def on_ready():
 )
 @app_commands.describe(
     limit="取得するメッセージ数（デフォルト: 100）",
+    all_messages="Botが取得できる範囲のすべてのメッセージを出力する場合はTrue",
     use_sjis="Shift_JIS(CP932)で出力する場合はTrue",
     include_user_id="ユーザーIDを出力に含める場合はTrue",
     user_name_type="投稿者名の表示形式",
@@ -77,17 +78,23 @@ async def on_ready():
 async def export_logs(
     interaction: discord.Interaction,
     limit: int = 100,
+    all_messages: bool = False,
     use_sjis: bool = False,
     include_user_id: bool = False,
     user_name_type: str = "display_name",
 ):
+    # 処理中の応答も実行者のみに表示
     await interaction.response.defer(ephemeral=True)
 
     messages = []
 
+    # 全履歴を取得する場合はNone
+    # 件数指定の場合は指定された数値
+    history_limit = None if all_messages else limit
+
     try:
         async for message in interaction.channel.history(
-            limit=limit
+            limit=history_limit
         ):
             time_str = message.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -124,7 +131,7 @@ async def export_logs(
 
             for attachment in message.attachments:
 
-                # ファイル名とサイズを取得
+                # ファイル名とファイルサイズを取得
                 file_name = attachment.filename
                 file_size = format_file_size(attachment.size)
 
@@ -208,12 +215,18 @@ async def export_logs(
         filename=f"log_{channel_name} in {server_name}.txt"
     )
 
+    # 取得件数の表示
+    if all_messages:
+        limit_text = "すべて"
+    else:
+        limit_text = f"{limit}件"
+
     # 出力完了Embed
     embed = discord.Embed(
         title="会話ログを出力しました",
         description=(
             "設定：\n"
-            f"・件数 `{limit}`件\n"
+            f"・取得件数 `{limit_text}`\n"
             f"・使用文字コード `{encoding_name}`\n"
             f"・ユーザーIDの表示 `{include_user_id}`\n"
             f"・ユーザー名タイプ `{user_name_type}`"
@@ -221,6 +234,7 @@ async def export_logs(
         color=discord.Color.green(),
     )
 
+    # ログファイルと完了メッセージを実行者のみに送信
     await interaction.followup.send(
         embed=embed,
         file=file,
