@@ -81,7 +81,7 @@ async def export_logs(
     include_user_id: bool = False,
     user_name_type: str = "display_name",
 ):
-    await interaction.response.defer(ephemeral=False)
+    await interaction.response.defer(ephemeral=True)
 
     messages = []
 
@@ -224,7 +224,7 @@ async def export_logs(
     await interaction.followup.send(
         embed=embed,
         file=file,
-        ephemeral=False,
+        ephemeral=True,
     )
 
 
